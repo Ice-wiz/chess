@@ -43,7 +43,7 @@ export class GameManager {
                         (g) => g.player1 === socket || g.player2 === socket
                     );
                     if (game) {
-                        game.makeMove(socket, message.move);
+                        game.makeMove(socket, message.payload.move);
                     }
                     break;
             }
