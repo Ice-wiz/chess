@@ -11,17 +11,8 @@ export const Game = () => {
   const [chess] = useState(new Chess());
   const [board, setBoard] = useState(chess.board());
   const [started, setStarted] = useState(false);
-  const [moveCount , setMoveCount] = useState(0); // State to track the number of moves made in the game  
+  const [color, setColor] = useState<"w" | "b" | "">("");
 
-  // State to track the active player
-  // This could be a color (e.g., "white" or "black") or null if not set
-  // This is used to determine whose turn it is
-  // and to manage the game state accordingly
-
-const [activePlayer, setActivePlayer] = useState<null | string>(null);
-
-
-  // Handle incoming WebSocket messages
   useEffect(() => {
     if (!socket) return;
 
@@ -46,42 +37,31 @@ const [activePlayer, setActivePlayer] = useState<null | string>(null);
     socket.onmessage = handleMessage;
 
     return () => {
-      socket.onmessage = null; // Cleanup listener on unmount
+      socket.onmessage = null;
     };
   }, [socket]);
 
-  // Initialize the game
-  const initializeGame = (Player:{}) => {
-    console.log(Player);
+  const initializeGame = (player: { color: "w" | "b" }) => {
     setBoard(chess.board());
     setStarted(true);
+    setColor(player.color);
+    console.log(chess.turn())
   };
 
-  // Handle a move from the server
-  const handleMove = (payload:{move:{to:string,from:string},moveCount:number}) => {
+  const handleMove = (payload: { move: { to: string; from: string } }) => {
     chess.move(payload.move);
     setBoard(chess.board());
-    console.log("Move made:", payload.move);
-    console.log("move count:",payload.moveCount);
-    setMoveCount(payload.moveCount);
+    console.log(chess.turn())
   };
 
-  // Handle game over
   const handleGameOver = () => {
     console.log("Game over");
   };
 
-  // Handle the "Play" button click
   const handlePlayClick = () => {
     if (socket) {
-      socket.send(
-        JSON.stringify({
-          type: INIT_GAME,
-        })
-      );
+      socket.send(JSON.stringify({ type: INIT_GAME }));
     }
-
-    console.log(JSON.stringify({ type: INIT_GAME }));
   };
 
   if (!socket) return <Loading />;
@@ -90,12 +70,15 @@ const [activePlayer, setActivePlayer] = useState<null | string>(null);
     <div className="justify-center flex">
       <div className="pt-8 max-w-screen-lg w-full">
         <div className="grid grid-cols-6 gap-4 w-full">
-          {/* Chessboard Section */}
           <div className="col-span-4 w-full flex justify-center">
-            <ChessBoard moveCount={moveCount} chess={chess} setBoard={setBoard} socket={socket} board={board} />
+            <ChessBoard
+              chess={chess}
+              setBoard={setBoard}
+              socket={socket}
+              board={board}
+              color={color}
+            />
           </div>
-
-          {/* Sidebar Section */}
           <div className="col-span-2 bg-slate-900 w-full flex justify-center">
             <div className="pt-8">
               {!started && <Button onClick={handlePlayClick}>Play</Button>}

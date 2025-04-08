@@ -7,7 +7,7 @@ export const ChessBoard = ({
   board,
   socket,
   setBoard,
-  moveCount
+  color
 }: {
   chess: Chess;
   setBoard: React.Dispatch<
@@ -25,53 +25,42 @@ export const ChessBoard = ({
     color: Color;
   } | null)[][];
   socket: WebSocket;
-  moveCount:number
+  color: "w" | "b" | "";
 }) => {
   const [from, setFrom] = useState<null | Square>(null);
 
-  // Handle square click logic
-  const handleSquareClick = (squareRepresentation: Square) => {
+  const handleSquareClick = (square: Square) => {
+
+    if(chess.turn()!==color){
+      alert("It's not your turn");
+      return;
+    }
+
     if (!from) {
-      // Set the starting square
-      setFrom(squareRepresentation);
+      setFrom(square);
     } else {
       try {
-        // Send the move to the server
+        const move = { from, to: square };
+        const result = chess.move(move);
+
+        if (!result) throw new Error("Invalid move");
+
+        setBoard(chess.board());
+
         socket.send(
           JSON.stringify({
             type: MOVE,
-            payload: {
-              move: {
-                from,
-                to: squareRepresentation,
-              },
-              moveCount:moveCount+1
-            },
+            payload: { move },
           })
         );
-
-        // Attempt to update the chess state and board
-        const moveResult = chess.move({ from, to: squareRepresentation });
-        console.log(moveResult)
-        if (!moveResult) {
-          throw new Error("Invalid move");
-        }
-
-        setBoard(chess.board());
-      } catch (error: any) {
-        console.error("Failed to make a move:", error.message);
+      } catch (err: any) {
+        console.error("Failed to make move:", err.message);
       } finally {
-        // Reset the starting square regardless of success or failure
         setFrom(null);
       }
-
-      // Log the move
-      setFrom(null);
-      console.log({ from, to: squareRepresentation });
     }
   };
 
-  // Render a single square
   const renderSquare = (
     square: { square: Square; type: PieceSymbol; color: Color } | null,
     squareRepresentation: Square,
@@ -100,7 +89,6 @@ export const ChessBoard = ({
     );
   };
 
-  // Render the chessboard
   return (
     <div className="text-white-200">
       {board.map((row, rowIndex) => (
