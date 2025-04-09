@@ -58,7 +58,10 @@ export const Game = () => {
     chess.move(payload.move);
     setBoard(chess.board());
     console.log(chess.turn());
-    play("move-self");
+    if (chess.move(payload.move).captured) {
+      play("capture");
+    }
+    else play("move-self");
   };
 
   const handleGameOver = () => {

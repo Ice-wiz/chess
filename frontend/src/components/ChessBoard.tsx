@@ -39,6 +39,7 @@ export const ChessBoard = ({
 
     try {
       const moveResult = chess.move(move);
+      // capture sound
 
       if (!moveResult) {
         play("invalid-move");
@@ -47,6 +48,10 @@ export const ChessBoard = ({
 
       console.log(`Moved: ${from} -> ${clickedSquare}`);
       console.log("Board after move:\n", chess.ascii());
+
+      if(moveResult.captured) {
+        play("capture");
+      }
 
       play("move-self");
       setBoard(chess.board());
