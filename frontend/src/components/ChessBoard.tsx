@@ -1,112 +1,123 @@
 import { Chess, Color, PieceSymbol, Square } from "chess.js";
 import { useState } from "react";
 import { MOVE } from "../messages";
+import { useSound } from "../hooks/useSound";
 
 export const ChessBoard = ({
   chess,
   board,
   socket,
   setBoard,
-  color
+  color,
 }: {
   chess: Chess;
   setBoard: React.Dispatch<
     React.SetStateAction<
-      ({
-        square: Square;
-        type: PieceSymbol;
-        color: Color;
-      } | null)[][]
+      ({ square: Square; type: PieceSymbol; color: Color } | null)[][]
     >
   >;
-  board: ({
-    square: Square;
-    type: PieceSymbol;
-    color: Color;
-  } | null)[][];
+  board: ({ square: Square; type: PieceSymbol; color: Color } | null)[][];
   socket: WebSocket;
   color: "w" | "b" | "";
 }) => {
   const [from, setFrom] = useState<null | Square>(null);
+  const { play } = useSound();
 
-  const handleSquareClick = (square: Square) => {
-
-    if(chess.turn()!==color){
+  const handleSquareClick = (clickedSquare: Square) => {
+    if (chess.turn() !== color) {
       alert("It's not your turn");
       return;
     }
 
     if (!from) {
-      setFrom(square);
-    } else {
-      try {
-        const move = { from, to: square };
-        const result = chess.move(move);
+      setFrom(clickedSquare);
+      console.log(`Selected: ${clickedSquare}`);
+      return;
+    }
 
-        if (!result) throw new Error("Invalid move");
+    const move = { from, to: clickedSquare };
 
-        setBoard(chess.board());
+    try {
+      const moveResult = chess.move(move);
 
-        socket.send(
-          JSON.stringify({
-            type: MOVE,
-            payload: { move },
-          })
-        );
-      } catch (err: any) {
-        console.error("Failed to make move:", err.message);
-      } finally {
-        setFrom(null);
+      if (!moveResult) {
+        play("invalid-move");
+        return;
       }
+
+      console.log(`Moved: ${from} -> ${clickedSquare}`);
+      console.log("Board after move:\n", chess.ascii());
+
+      play("move-self");
+      setBoard(chess.board());
+
+      socket.send(
+        JSON.stringify({
+          type: MOVE,
+          payload: { move },
+        })
+      );
+    } catch (err: any) {
+      console.error("Move error:", err.message);
+      play("invalid-move");
+      alert("Error while moving piece.");
+    } finally {
+      setFrom(null);
     }
   };
 
+  const getSquareLabel = (row: number, col: number) =>
+    `${String.fromCharCode(97 + col)}${8 - row}` as Square;
+
   const renderSquare = (
     square: { square: Square; type: PieceSymbol; color: Color } | null,
-    squareRepresentation: Square,
-    isLightSquare: boolean,
-    key: number
+    squareLabel: Square,
+    isLight: boolean,
+    key: string
   ) => {
-    const squareColorClass = isLightSquare ? "bg-green-500" : "bg-slate-500";
-    const pieceImage = square
-      ? `/${
-          square.color === "b"
-            ? square.type
-            : `${square.type.toUpperCase()} copy`
-        }.png`
-      : null;
+    const bgClass = isLight ? "bg-green-600" : "bg-white";
+    const pieceSrc = square
+      ? `chess-pieces/${square.color}${square.type}.png`
+      : "";
 
     return (
       <div
         key={key}
-        onClick={() => handleSquareClick(squareRepresentation)}
-        className={`w-16 h-16 ${squareColorClass}`}
+        onClick={() => handleSquareClick(squareLabel)}
+        className={`w-16 h-16 ${bgClass}`}
       >
-        <div className="w-full h-full flex justify-center items-center">
-          {pieceImage && <img className="w-4" src={pieceImage} alt="x" />}
+        <div className="w-full h-full flex justify-center items-center cursor-pointer">
+          {pieceSrc && <img src={pieceSrc} alt="" />}
         </div>
       </div>
     );
   };
 
-  return (
-    <div className="text-white-200">
-      {board.map((row, rowIndex) => (
-        <div key={rowIndex} className="flex">
-          {row.map((square, colIndex) => {
-            const squareRepresentation =
-              String.fromCharCode(97 + colIndex) + (8 - rowIndex);
-            const isLightSquare = (rowIndex + colIndex) % 2 === 0;
+  const rows = color === "w" ? board : [...board].slice().reverse();
 
-            return renderSquare(
-              square,
-              squareRepresentation as Square,
-              isLightSquare,
-              colIndex
-            );
-          })}
-        </div>
-      ))}
+  return (
+    <div className="text-white-200 ">
+      {rows.map((row, rowIndex) => {
+        const actualRow = color === "w" ? row : [...row].slice().reverse();
+
+        return (
+          <div key={rowIndex} className="flex">
+            {actualRow.map((square, colIndex) => {
+              const actualRowIdx = color === "w" ? rowIndex : 7 - rowIndex;
+              const actualColIdx = color === "w" ? colIndex : 7 - colIndex;
+              const squareLabel = getSquareLabel(actualRowIdx, actualColIdx);
+              const isLight = (actualRowIdx + actualColIdx) % 2 === 0;
+
+              return renderSquare(
+                square,
+                squareLabel,
+                isLight,
+                `${actualRowIdx}-${actualColIdx}`
+              );
+            })}
+          </div>
+        );
+      })}
     </div>
   );
 };
