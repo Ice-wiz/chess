@@ -51,7 +51,6 @@ export const Game = () => {
     setStarted(true);
     setColor(player.color);
     console.log(chess.turn());
-    play("game-start");
   };
 
   const handleMove = (payload: { move: { to: string; from: string } }) => {
@@ -71,6 +70,7 @@ export const Game = () => {
 
   const handlePlayClick = () => {
     if (socket) {
+      play("game-start");
       socket.send(JSON.stringify({ type: INIT_GAME }));
     }
   };

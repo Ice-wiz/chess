@@ -98,7 +98,7 @@ export const ChessBoard = ({
     );
   };
 
-  const rows = color === "w" ? board : [...board].slice().reverse();
+  const rows = color !== "b" ? board : [...board].slice().reverse();
 
   return (
     <div className="text-white-200 ">

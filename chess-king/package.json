@@ -1,8 +1,10 @@
 {
-  "name": "my-turborepo",
+  "name": "chess-king",
   "private": true,
   "scripts": {
     "build": "turbo run build",
+    "dev:frontend": "turbo run dev --filter=frontend",
+    "dev:ws": "turbo run dev --filter=ws",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
