@@ -30,15 +30,13 @@ model Game {
   blackPlayerId String
   whitePlayer   User        @relation("GamesAsWhite", fields: [whitePlayerId], references: [id])
   blackPlayer   User        @relation("GamesAsBlack", fields: [blackPlayerId], references: [id])
-  status        GameStatus
+  status        GameStatus  @default(IN_PROGRESS)
   result        GameResult?
-  timeControl   TimeControl
-  startingFen   String      @default("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") // default value for the startingFen
+  startingFen   String      @default("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
   currentFen    String?
   startAt       DateTime    @default(now())
   endAt         DateTime?
   moves         Move[]
-  opening       String?
   event         String?
 
   @@index([status, result])
@@ -51,12 +49,11 @@ model Move {
   moveNumber Int
   from       String
   to         String
-  comments   String?
   before     String
   after      String
-  timeTaken  Int?     @default(0)
-  createdAt  DateTime @default(now())
   san        String?
+  timeTaken  Int      @default(0)
+  createdAt  DateTime @default(now())
 
   @@index([gameId])
 }
@@ -72,13 +69,6 @@ enum GameResult {
   WHITE_WINS
   BLACK_WINS
   DRAW
-}
-
-enum TimeControl {
-  CLASSICAL
-  RAPID
-  BLITZ
-  BULLET
 }
 
 enum AuthProvider {
